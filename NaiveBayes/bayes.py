@@ -1,11 +1,12 @@
 __author__ = 'idelbrid'
-
 import numpy as np
 import sys
 
-class naive_bayes:
+class NaiveBayes:
     def __init__(self, alpha=1):
         self.alpha = alpha
+        self.num_atts, self.num_labels, self.num_recrds = None
+        self.yvals, self.ycts, self.xval_cts = None
 
     def fit(self, X, y):
         """INPUT: training data matrix, traning data labels
@@ -31,7 +32,7 @@ class naive_bayes:
             frequencies = np.array([np.unique(x_column, return_counts=True) for 
                                 x_column in X_has_yval[i].T]) #freq for each attribute
             xval_cts[i] = [{att_values[indx]: freqs[indx] for indx in range(len(att_values))} for 
-                                 (att_values, freqs) in frequencies] # stats for each attribute
+                                 (att_values, freqs) in frequencies]  # stats for each attribute
         self.num_atts = len(X[0])
         self.num_recrds = len([X])
         self.yvals = unique_yvals
