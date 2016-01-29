@@ -43,7 +43,6 @@ class NaiveBayes:
         self.xval_cts = xval_cts
          
     def predict(self, X):
-        start = time.time()
         scores = np.zeros((len(X), self.num_labels))
         predictions = np.zeros((len(X)))
         for x_indx, record in enumerate(X):
@@ -67,8 +66,7 @@ class NaiveBayes:
                     predictions[x_indx] = yval
         self.scores = scores
         self.predictions = predictions
-        end = time.time()
-        print 'time for predict', (end - start)
+
         return predictions
         
 def read_data(file_str, num_feats):
@@ -112,6 +110,7 @@ def batch_tests(train_data, train_labels, test_data, test_labels, alpha_vals):
         accuracy, num_right, total_pts = evaluate_accuracy(test_labels, predictions)
         accuracies[index] = accuracy
     return accuracies
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print 'No test dataset. \nAdd test file with program argument'
@@ -120,7 +119,7 @@ if __name__ == "__main__":
     testfile = sys.argv[1]
     num_feats = 123  # Known ahead of time
 
-    train_data, train_labels = read_data('../a7a.train', num_feats)
+    train_data, train_labels = read_data('a7a.train', num_feats)
     test_data, test_labels = read_data(testfile, num_feats)
 
     model = NaiveBayes(alpha=305.5)
