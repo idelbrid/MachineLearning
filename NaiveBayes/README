@@ -1,0 +1,43 @@
+Name: Ian Delbridge
+Email: idelbrid@u.rochester.edu
+Course: CSC246
+Homework: Homework 3, due Mon 2/1 5pm by turn_in script
+	Implement naive bayes with Dirichlet smoothing for the adult income dataset. Plot classification error on the dev set as a function of alpha, and report the performance of the best alpha on the test set. 
+
+************ Files *********
+bayes.py - python file containing the implementation 
+README - This file
+bayes_alpha_plot.png - image file for a plot of accuracies of the classifier using alphas ranging from 0.5 to 1000
+
+
+************ Algorithm *****
+My algorithm's implementation is split into two phases: fit and predict. The fit function of the NaiveBayes class takes the training data and counts the number of occurrences of label values and attribute values given each label value. 
+The predict function takes testing data, and for each record, finds the label such that the probability of observing the label given the record's attribute values is highest. That is, it maximizes p(y=a | x) = p(x | y=a) * p(y=a) / p(x). However, we don't compute all of these things. p(x) is the same for all labels, and thus the max of p(x | y=a) * p(y=a) is the same. Then p(y=a) = ct(y=a) / TOTAL_OBSERVATIONS, but total observations is the same for all labels, so I don't include it either. Finally, the naive bayes assumption lets me take p(x | y=a) = p(x0 | y=a) * p(x1 | y=a) * ... * p(xd | y=a). Each of these are less than 1 so the product is probably very small, so I use log (which preserves the argmax) to change the equation to argmax( log(p(x0 | y=a)) + ... + log(p(xd | y=a)  + log(ct(y=a)))
+Finally again, we normalize the classifier with the alpha parameter so that p(xi | y=a) = (ct(xi ^ y=a) + alpha)/(ct(xi) + alpha * K)
+
+More simply, the algorithm counts the occurrences of attribute values  in conjunction with label values, and finds the label that maximizes the probability of observing that label through an equivalent maximization. 
+
+Note that my implementation will work for any number of labels and attribute values, not just binary.
+
+************ Instructions ***
+run the following command
+python bayes.py TESTING_DATA
+where TESTING_DATA is the file containing the data which you wish to predict.
+Note that the training data file 'a7a.train' should be in the same directory. 
+
+************ Results *******
+
+[idelbrid@cycle1 NaiveBayes]$ python bayes.py a7a.dev
+6666 correct predictions for 8000 .
+The accuracy is  0.83325
+[idelbrid@cycle1 NaiveBayes]$ python bayes.py a7a.test
+7037 correct predictions for 8461 .
+The accuracy is  0.831698380806
+
+
+************ Your interpretation *******
+This algorithm even when maximized using the best alpha doesn't quite meet the performance of the regularized linear regression classifier. I expect that the reason for this is the naive-bayes assumption - that the attribute values are independent given the label. Since this algorithm despite the probability behind it is still a linear algorithm, I wouldn't expect it to perform better than other linear classifiers dramatically, and indeed, it seems that the naive bayes assumption makes the linear classifier sub optimal.
+
+************ References ************
+Textbook, class notes, NB notes...
+
