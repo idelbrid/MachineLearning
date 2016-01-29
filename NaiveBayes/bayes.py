@@ -2,20 +2,21 @@ __author__ = 'idelbrid'
 import numpy as np
 import sys
 
+
 class NaiveBayes:
     def __init__(self, alpha=1):
         self.alpha = alpha
-        self.num_atts, self.num_labels, self.num_recrds = None
-        self.yvals, self.ycts, self.xval_cts = None
+        self.num_atts, self.num_labels, self.num_recrds = None, None, None
+        self.yvals, self.ycts, self.xval_cts = None, None, None
 
     def fit(self, X, y):
         """INPUT: training data matrix, traning data labels
         OUTPUT: weights of the model (ndarray)"""
-        #p(y=a | x1,...,xn) = p(x1,...,xn | y=a)*p(y=a) / p(x1,...xn)        
-        # p(x1,...,xn) same for all classes so ... don't need it
-        # p(y=1) = relative frequency of y=1
-        # p(x1,...,xn | y=1) = p(x1|y=1)...p(xn|y=1)
-        # p(y=1, x1,...,xn) goal 
+        # p(y=a | x1,...,xn) = p(x1,...,xn | y=a)*p(y=a) / p(x1,...xn)  bayes rule
+        # p(x1,...,xn) same for all labels so ... don't need it
+        # p(y=a) = frequency of y=a
+        # p(x1,...,xn | y=a) = p(x1|y=a)...p(xn|y=a) (assumed)
+        # p(y=a, x1,...,xn) goal
         # 
         self.X = X
         self.y = y
@@ -44,24 +45,25 @@ class NaiveBayes:
         scores = np.zeros((len(X), self.num_labels))
         predictions = np.zeros((len(X)))
         for x_indx, record in enumerate(X):
-            max_score, best_y = (0, -1)
-            for indx, yval in enumerate(self.yvals):
-                xval_cts = self.xval_cts[indx]
+            max_score, best_y = -np.inf, -1
+            for y_indx, yval in enumerate(self.yvals):
+                xval_cts = self.xval_cts[y_indx]
                 cursum = 0
                 for att, val in enumerate(record):
                     try:
-                        cursum += np.log((xval_cts[att][val] + self.alpha)/(
-                            self.ycts[indx]+self.num_labels * self.alpha))
+                        cursum += np.log(float(xval_cts[att][val] + self.alpha)/(
+                            self.ycts[y_indx]+self.num_labels * self.alpha))
                     except KeyError:
-                        cursum += np.log(self.alpha * 1.0 / (self.ycts[indx] + 
+                        cursum += np.log(float(self.alpha) / (self.ycts[y_indx] +
                                          self.num_labels * self.alpha))
                         # never seen this y with this attribute's value - 0 ct
                         # print x_indx, record, indx, yval, att, val
-                s = cursum * self.ycts[indx]
-                scores[x_indx, indx] = s
+                s = cursum + np.log(self.ycts[y_indx])
+                scores[x_indx, y_indx] = s
                 if s > max_score:
                     # best_y_indx = indx
                     # best_y = yval
+                    max_score = s
                     predictions[x_indx] = yval
         self.scores = scores
         self.predictions = predictions
@@ -74,7 +76,7 @@ def read_data(file_str, num_feats):
         for i, l in enumerate(data_file): # lines from stackoverflow article
             pass                          #
         size = i + 1                      #
-        data = np.zeros((size, num_feats), dtype = np.int64)
+        data = np.zeros((size, num_feats), dtype=np.int64)
         labels = np.zeros(size, dtype = np.int16)
 
     with open(file_str, 'r') as data_file:   # Reading data to matrix
@@ -103,10 +105,10 @@ if __name__ == "__main__":
     testfile = sys.argv[1]
     num_feats = 123  # Known ahead of time
 
-    train_data, train_labels = read_data('a7a.train', num_feats)
+    train_data, train_labels = read_data('../a7a.train', num_feats)
     test_data, test_labels = read_data(testfile, num_feats)
 
-    model = naive_bayes(alpha=1)
+    model = NaiveBayes(alpha=1)
     model.fit(train_data, train_labels)
     predictions = model.predict(test_data)
 
