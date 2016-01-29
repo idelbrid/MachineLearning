@@ -1,6 +1,7 @@
 __author__ = 'idelbrid'
 import numpy as np
 import sys
+import time
 
 
 class NaiveBayes:
@@ -24,16 +25,16 @@ class NaiveBayes:
         # unique_yvals = unique_yvals_w_freq[:,0]
         # yvals_cts = unique_yvals_w_freq[:,1]
         has_yval_mask = [y == yval for yval in unique_yvals]
-        # y_has_yval = [y[has_yval_mask[yval]] for yval in unique_yvals]
-        # y = np.concatenate(y_has_0, y_has_1, axis=1)
-        # x_cts = [np.ndarray((1,1)) for yval in unique_yvals]
+
         X_has_yval = [X[has_yval_mask[yval_indx]] for yval_indx in range(len(unique_yvals))]
         xval_cts = [dict() for x in unique_yvals]
         for i, yval in enumerate(unique_yvals):
-            frequencies = np.array([np.unique(x_column, return_counts=True) for 
-                                x_column in X_has_yval[i].T]) #freq for each attribute
-            xval_cts[i] = [{att_values[indx]: freqs[indx] for indx in range(len(att_values))} for 
-                                 (att_values, freqs) in frequencies]  # stats for each attribute
+
+            frequencies = np.array([np.unique(x_column, return_counts=True) for x_column in X_has_yval[i].T])
+            # one frequency for each attribute
+            # inline_freq = np.array(np.stack(np.unique(x_column, return_counts=True) for x_column in X_has_yval[i].T))
+            xval_cts[i] = [{att_values[indx]: freqs[indx] for indx in range(len(att_values))} for
+                           (att_values, freqs) in frequencies]  # stats for each attribute
         self.num_atts = len(X[0])
         self.num_recrds = len([X])
         self.yvals = unique_yvals
@@ -42,6 +43,7 @@ class NaiveBayes:
         self.xval_cts = xval_cts
          
     def predict(self, X):
+        start = time.time()
         scores = np.zeros((len(X), self.num_labels))
         predictions = np.zeros((len(X)))
         for x_indx, record in enumerate(X):
@@ -49,16 +51,14 @@ class NaiveBayes:
             for y_indx, yval in enumerate(self.yvals):
                 xval_cts = self.xval_cts[y_indx]
                 cursum = 0
-                for att, val in enumerate(record):
-                    try:
-                        cursum += np.log(float(xval_cts[att][val] + self.alpha)/(
-                            self.ycts[y_indx]+self.num_labels * self.alpha))
-                    except KeyError:
-                        cursum += np.log(float(self.alpha) / (self.ycts[y_indx] +
-                                         self.num_labels * self.alpha))
-                        # never seen this y with this attribute's value - 0 ct
-                        # print x_indx, record, indx, yval, att, val
-                s = cursum + np.log(self.ycts[y_indx])
+                this_rec_freqs = np.array([xval_cts[att].get(val, 0) for (att, val) in enumerate(record)], dtype=np.float64)
+                marginal_scores = np.log((this_rec_freqs + self.alpha) / (self.ycts[y_indx] + self.num_labels *
+                                                                               self.alpha))
+                s = np.sum(marginal_scores) + np.log(self.ycts[y_indx])
+                # for att, val in enumerate(record):
+                #     cursum += np.log(float(xval_cts[att].get(val, 0) + self.alpha)/(self.ycts[y_indx]+self.num_labels *
+                #                                                              self.alpha))
+                # s = cursum + np.log(self.ycts[y_indx])
                 scores[x_indx, y_indx] = s
                 if s > max_score:
                     # best_y_indx = indx
@@ -67,6 +67,8 @@ class NaiveBayes:
                     predictions[x_indx] = yval
         self.scores = scores
         self.predictions = predictions
+        end = time.time()
+        print 'time for predict', (end - start)
         return predictions
         
 def read_data(file_str, num_feats):
@@ -97,6 +99,19 @@ def evaluate_accuracy(y, yhat):
     accuracy = float(num_right) / len(y)
     return accuracy, num_right, len(y)
 
+def batch_tests(train_data, train_labels, test_data, test_labels, alpha_vals):
+    """
+    :param alpha_vals: list of values to test alpha for
+    :return: list of accuracies corresponding to the alpha vals
+    """
+    accuracies = np.zeros(len(alpha_vals))
+    for index, alpha in enumerate(alpha_vals):
+        model = NaiveBayes(alpha=alpha)
+        model.fit(train_data, train_labels)
+        predictions = model.predict(test_data)
+        accuracy, num_right, total_pts = evaluate_accuracy(test_labels, predictions)
+        accuracies[index] = accuracy
+    return accuracies
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print 'No test dataset. \nAdd test file with program argument'
@@ -108,7 +123,7 @@ if __name__ == "__main__":
     train_data, train_labels = read_data('../a7a.train', num_feats)
     test_data, test_labels = read_data(testfile, num_feats)
 
-    model = NaiveBayes(alpha=1)
+    model = NaiveBayes(alpha=305.5)
     model.fit(train_data, train_labels)
     predictions = model.predict(test_data)
 
@@ -116,3 +131,9 @@ if __name__ == "__main__":
 
     print num_right, 'correct predictions for', total_pts, '.'
     print 'The accuracy is ', accuracy
+
+    # alphas = np.arange(0.5, 1000, 0.5)
+    # accuracies = batch_tests(train_data, train_labels, test_data, test_labels, alphas)
+    # with open('record_accuracies.txt', 'w') as f:
+    #     for alpha, accuracy in zip(alphas, accuracies):
+    #         f.write('%f, %f\n' % (alpha, accuracy))
