@@ -49,15 +49,11 @@ class NaiveBayes:
             max_score, best_y = -np.inf, -1
             for y_indx, yval in enumerate(self.yvals):
                 xval_cts = self.xval_cts[y_indx]
-                cursum = 0
                 this_rec_freqs = np.array([xval_cts[att].get(val, 0) for (att, val) in enumerate(record)], dtype=np.float64)
                 marginal_scores = np.log((this_rec_freqs + self.alpha) / (self.ycts[y_indx] + self.num_labels *
                                                                                self.alpha))
                 s = np.sum(marginal_scores) + np.log(self.ycts[y_indx])
-                # for att, val in enumerate(record):
-                #     cursum += np.log(float(xval_cts[att].get(val, 0) + self.alpha)/(self.ycts[y_indx]+self.num_labels *
-                #                                                              self.alpha))
-                # s = cursum + np.log(self.ycts[y_indx])
+
                 scores[x_indx, y_indx] = s
                 if s > max_score:
                     # best_y_indx = indx
