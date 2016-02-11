@@ -92,13 +92,13 @@ if __name__ == "__main__":
         train_data, train_labels = read_data('../a7a.train', num_feats)
         test_data, test_labels = read_data(testfile, num_feats)
         
-        model = SVM(max_iter=1000, capacity=50, learn_rate=50, rate_decay='linear')  # declare model
+        model = SVM(max_iter=1000, capacity=100, learn_rate=50, rate_decay='linear')  # declare model
         model.fit(train_data, train_labels)  # fit the model
         predictions = model.predict(test_data)  # predict
         
         accuracy, num_right, total_pts = evaluate_accuracy(test_labels,  
                                                            predictions)
-           
+        print "capacity:", 1, "max_iter:", 1000, 'learn_rate:', 1000
         print num_right, 'correct predictions for', total_pts, '.'
         print 'The accuracy is', accuracy                          
         
