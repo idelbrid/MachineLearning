@@ -32,15 +32,16 @@ class SVM:  # wrapper for the perceptron utilities
         # Stochastic Gradient Descent
         for i in range(0, self.max_iter):
             if i % 100 == 0:
-                print i, 'iterations'
+                pass
+                # print i, 'iterations'
             run_w = self.w
             for n in range(0, self.N):
                 if 1 - self.y[n] * (np.dot(self.w.T, self.X[n]) + self.b) > 0:
-                    self.w += - self.learn_rate * (1 / self.N * self.w - self.C *
+                    self.w += - self.learn_rate * (float(1) / self.N * self.w - self.C *
                                                    self.y[n] * self.X[n])
                     self.b += self.learn_rate * self.C * self.y[n]
                 else:
-                    self.w = self.w - self.learn_rate * (1 / self.N * self.w)
+                    self.w = self.w - self.learn_rate * (float(1) / self.N * self.w)
             self.learn_rate = self.rate_update(self.learn_rate)
             if (np.abs(run_w - self.w).sum()) < epsilon:  # good enough right here...
                 break
@@ -87,12 +88,14 @@ if __name__ == "__main__":
         print('No test dataset. \nAdd test file with program argument.')
         sys.exit()
     else:
-	test_capacity = 5
-	test_max_iter = 500
-	test_learn_rate = 30
-	test_rate_decay = 'linear'
+        test_capacity = 10
+        test_max_iter = 500
+        test_learn_rate = 50
+        test_rate_decay = 'linear'
 
         testfile = sys.argv[1]
+        if len(sys.argv) > 2:
+            test_capacity = int(sys.argv[2])
 
         num_feats = 123  # known ahead of time
 
@@ -110,3 +113,4 @@ if __name__ == "__main__":
         print "capacity:", test_capacity, "max_iter:", test_max_iter, 'learn_rate:', test_learn_rate
         print num_right, 'correct predictions for', total_pts, '.'
         print 'The accuracy is', accuracy
+        # print accuracy

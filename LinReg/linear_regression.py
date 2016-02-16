@@ -69,21 +69,24 @@ if __name__ == "__main__":
         print('No test dataset. \nAdd test file with program argument.')
         sys.exit()
     else:
+        reg_constant = -1.04
         testfile = sys.argv[1]
+        if len(sys.argv) > 2:
+            reg_constant = float(sys.argv[2])
 
         num_feats = 123 # known ahead of time 
 
         train_data, train_labels = read_data('../a7a.train', num_feats)
         test_data, test_labels = read_data(testfile, num_feats)
         
-        model = linear_regression(-1.04)  # declare model with lambda -1.04 for regularization
+        model = linear_regression(reg_constant)  # declare model with lambda -1.04 for regularization
         model.fit(train_data, train_labels)  # fit the model
         predictions = model.predict(test_data)  # predict
         
         accuracy, num_right, total_pts = evaluate_accuracy(test_labels,  
                                                            predictions)
            
-        print num_right, 'correct predictions for', total_pts, '.'
-        print 'The accuracy is', accuracy                          
-        
+        # print num_right, 'correct predictions for', total_pts, '.'
+        # print 'The accuracy is', accuracy                          
+        print accuracy
 

@@ -8,9 +8,9 @@ class perceptron:  # wrapper for the perceptron utilities
 
         self.learn_rate = learn_rate
         if rate_decay == "quadratic":
-            self.rate_update = lambda x: x * (1 - 1 / self.max_iter)
+            self.rate_update = lambda x: x * (1 - float(1) / self.max_iter)
         elif rate_decay == "linear":
-            self.rate_update = lambda x: x - 1 / self.max_iter  # Todo
+            self.rate_update = lambda x: x - float(self.learn_rate) / self.max_iter  # Todo
         elif type(rate_decay) is None:
             self.rate_update = lambda x: x
         else:
@@ -35,8 +35,9 @@ class perceptron:  # wrapper for the perceptron utilities
 	    any_updates = False
             for n in range(0, self.N):
                 if np.sign(np.dot(self.w.T, self.X[n])) != self.y[n]:
-                    self.w += self.y[n] * self.X[n]
+                    self.w += self.learn_rate * self.y[n] * self.X[n]
                     any_updates = True
+                self.learn_rate = self.rate_update(self.learn_rate)
             if not any_updates:
                 break
 
@@ -91,7 +92,7 @@ if __name__ == "__main__":
         train_data, train_labels = read_data('../a7a.train', num_feats)
         test_data, test_labels = read_data(testfile, num_feats)
 
-        model = perceptron(max_iter=2500)  # declare model with max iterations 1000
+        model = perceptron(max_iter=250, learn_rate=150, rate_decay='linear')  # declare model with max iterations 1000
         model.fit(train_data, train_labels)  # fit the model
         predictions = model.predict(test_data)  # predict
 
