@@ -31,7 +31,9 @@ class SVM:  # wrapper for the perceptron utilities
         epsilon = 0.5
         # Stochastic Gradient Descent
         for i in range(0, self.max_iter):
-            run_w = self.w
+            if i % 100 == 0:
+		print i, 'iterations'
+	    run_w = self.w
             for n in range(0, self.N):
                 if 1 - self.y[n] * (np.dot(self.w.T, self.X[n]) + self.b) > 0:
                     self.w += - self.learn_rate * (1 / self.N * self.w - self.C *
@@ -85,6 +87,11 @@ if __name__ == "__main__":
         print('No test dataset. \nAdd test file with program argument.')
         sys.exit()
     else:
+	test_capacity = 5
+	test_max_iter = 1000
+	test_learn_rate = 50
+	test_rate_decay = 'linear'
+
         testfile = sys.argv[1]
 
         num_feats = 123  # known ahead of time
@@ -92,15 +99,14 @@ if __name__ == "__main__":
         train_data, train_labels = read_data('../a7a.train', num_feats)
         test_data, test_labels = read_data(testfile, num_feats)
 
-        model = SVM(max_iter=1000, capacity=50, learn_rate=50, rate_decay='linear')  # declare model
+        model = SVM(max_iter=test_max_iter, capacity=test_capacity, learn_rate=test_learn_rate, rate_decay=test_rate_decay)  # declare model
 
-        model = SVM(max_iter=1000, capacity=100, learn_rate=50, rate_decay='linear')  # declare model
         model.fit(train_data, train_labels)  # fit the model
         predictions = model.predict(test_data)  # predict
 
         accuracy, num_right, total_pts = evaluate_accuracy(test_labels,
                                                            predictions)
 
-        print "capacity:", 1, "max_iter:", 1000, 'learn_rate:', 1000
+        print "capacity:", test_capacity, "max_iter:", test_max_iter, 'learn_rate:', test_learn_rate
         print num_right, 'correct predictions for', total_pts, '.'
         print 'The accuracy is', accuracy

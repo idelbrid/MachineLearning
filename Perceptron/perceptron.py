@@ -30,7 +30,9 @@ class perceptron:  # wrapper for the perceptron utilities
         self.w = np.zeros(self.K)
 
         for i in range(0, self.max_iter):
-            any_updates = False
+            if i % 100 == 0:
+		print i, 'iterations'
+	    any_updates = False
             for n in range(0, self.N):
                 if np.sign(np.dot(self.w.T, self.X[n])) != self.y[n]:
                     self.w += self.y[n] * self.X[n]
