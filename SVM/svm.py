@@ -8,11 +8,11 @@ class SVM:  # wrapper for the perceptron utilities
         self.learn_rate = learn_rate
         self.C = capacity
         self.rate_decay = rate_decay
-
+        
         if rate_decay == "quadratic":
-            self.rate_update = lambda x: x * (1 - 1 / self.max_iter)
+            self.rate_update = lambda x: x * (1 - float(1) / self.max_iter)
         elif rate_decay == "linear":
-            self.rate_update = lambda x: x - 1 / self.max_iter  # Todo
+            self.rate_update = lambda x: x - float(self.learn_rate) / self.max_iter
         elif rate_decay is None:
             self.rate_update = lambda x: x
         else:
@@ -32,8 +32,8 @@ class SVM:  # wrapper for the perceptron utilities
         # Stochastic Gradient Descent
         for i in range(0, self.max_iter):
             if i % 100 == 0:
-		print i, 'iterations'
-	    run_w = self.w
+                print i, 'iterations'
+            run_w = self.w
             for n in range(0, self.N):
                 if 1 - self.y[n] * (np.dot(self.w.T, self.X[n]) + self.b) > 0:
                     self.w += - self.learn_rate * (1 / self.N * self.w - self.C *
@@ -88,8 +88,8 @@ if __name__ == "__main__":
         sys.exit()
     else:
 	test_capacity = 5
-	test_max_iter = 1000
-	test_learn_rate = 50
+	test_max_iter = 500
+	test_learn_rate = 30
 	test_rate_decay = 'linear'
 
         testfile = sys.argv[1]
