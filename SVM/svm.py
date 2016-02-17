@@ -88,9 +88,9 @@ if __name__ == "__main__":
         print('No test dataset. \nAdd test file with program argument.')
         sys.exit()
     else:
-        test_capacity = 10
-        test_max_iter = 500
-        test_learn_rate = 50
+        test_capacity = 0.03
+	test_max_iter = 500
+        test_learn_rate = 5
         test_rate_decay = 'linear'
 
         testfile = sys.argv[1]
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
         num_feats = 123  # known ahead of time
 
-        train_data, train_labels = read_data('../a7a.train', num_feats)
+        train_data, train_labels = read_data('a7a.train', num_feats)
         test_data, test_labels = read_data(testfile, num_feats)
 
         model = SVM(max_iter=test_max_iter, capacity=test_capacity, learn_rate=test_learn_rate, rate_decay=test_rate_decay)  # declare model
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         accuracy, num_right, total_pts = evaluate_accuracy(test_labels,
                                                            predictions)
 
-        print "capacity:", test_capacity, "max_iter:", test_max_iter, 'learn_rate:', test_learn_rate
+        
         print num_right, 'correct predictions for', total_pts, '.'
         print 'The accuracy is', accuracy
         # print accuracy
