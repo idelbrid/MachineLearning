@@ -89,11 +89,11 @@ if __name__ == "__main__":
 
         num_feats = 123  # known ahead of time
 
-        train_data, train_labels = read_data('../a7a.train', num_feats)
+        train_data, train_labels = read_data('a7a.train', num_feats)
         test_data, test_labels = read_data(testfile, num_feats)
 
-        model = perceptron(max_iter=250, learn_rate=150, rate_decay='linear')  # declare model with max iterations 1000
-        model.fit(train_data, train_labels)  # fit the model
+        model = perceptron(max_iter=1000, learn_rate=50, rate_decay='linear')  # declare model with max iterations 1000
+	model.fit(train_data, train_labels)  # fit the model
         predictions = model.predict(test_data)  # predict
 
         accuracy, num_right, total_pts = evaluate_accuracy(test_labels,
