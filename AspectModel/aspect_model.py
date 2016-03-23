@@ -3,7 +3,7 @@ import numpy as np
 
 
 class aspect_model:  # wrapper for the perceptron utilities
-    def __init__(self, max_iter, num_topics):  # todo
+    def __init__(self, max_iter, num_topics):  # todo finish?
         self.X = None
         self.y_pred = None
         self.ndim = None
@@ -12,7 +12,7 @@ class aspect_model:  # wrapper for the perceptron utilities
         self.word_vals = None
         self.doc_vals = None
 
-    def fit_pred(self, X):  # todo
+    def fit_pred(self, X):  # todo: finish
         self.X = X
         self.N = X.shape[0]
         self.ndim = X.shape[1]
@@ -47,7 +47,7 @@ class aspect_model:  # wrapper for the perceptron utilities
                     pdz[i, k] = ec_dk[i, k] / ec_k[k]
 
 
-def read_data(file_str, num_feats):
+def read_data(file_str, num_feats):  # todo: verify this is correct
     """ INPUT: string denoting the file containing the dataset
         OUTPUT: matrix of the data """
     with open(file_str, 'r') as data_file:  # Reading number of observations
@@ -66,7 +66,7 @@ def read_data(file_str, num_feats):
                     data[i, int(feat_number)] = value  # count from 0
     return data
 
-def evaluate_accuracy():  # todo
+def evaluate_accuracy():  # todo: all of it?
     pass
 # def evaluate_accuracy(y, yhat):
 #     int_prediction = np.sign(yhat)
