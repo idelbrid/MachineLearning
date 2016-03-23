@@ -1,0 +1,8 @@
+*.dev
+*.test
+*.train
+*.pyc
+*.py~
+TURN_IN
+turn_in_exec
+*ian_delbridge_hw*

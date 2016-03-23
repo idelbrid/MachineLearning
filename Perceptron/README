@@ -1,0 +1,73 @@
+Name: Ian Delbridge
+Email: idelbrid@u.rochester.edu
+Course: CSC246
+Homework: Homework 5, due Wed 2/17 5pm by turn_in script
+    Implement perceptron and SVM for the adult income dataset. Report how performance on dev varies as a function of C, and how perceptron and SVM compare. 
+************ Files *********
+perceptron.py - Code for the perceptron algorithm classifier
+svm.py - Code for the SVM classifier
+README - This file
+svm_cap_tests - Record of the result of different combinations of parameters on the svm classifier. In particular shows the difference in accuracy for a given "capacity" C.
+
+
+************ Algorithm *****
+Perceptron:
+w := weights of the linear classifier
+X := training data
+N := number of observations/records
+y := class label (-1 or 1)
+L := learning rate (may change over the course of the evaluation)
+
+Basic
+REPEAT UNTIL maxiter
+	for n in 1 to N
+		if sign(w.T * X^(n)) != y_n
+			w = w + y_n * X^(n)
+
+Modified (slightly different gradient descent method)
+REPEAT UNTIL maxiter
+	for n in 1 to N
+		if sign(w.T * X^(n)) != y_n
+			w = w + L * y_n * X^(n)
+
+The the predictor is for a new observation x, 
+	yhat = w.T * x
+Note that you can just add a bias parameter by appending X with an attribute that is always 1.
+
+Support Vector Machine:
+w := weight of the linear classifier
+b := bias variable
+X := training data
+N := number of observations/records
+y := class label (-1 or 1)
+L := learning rate (may change over the course of the evaluation)
+
+REPEAT UNTIL maxiter
+	for n in 1 to N
+		if 1- y_n * (w.T * X^(n) + b) > 0
+			w = w - L * (1/N * w - C * y_n * X^(n) )
+			b = L * C * y_n
+		otherwise
+			w = w - L * (1/N * w)
+
+
+The the predictor is for a new observation x, 
+	yhat = w.T * x + b
+
+
+************ Instructions ***
+To run the perceptron algorithm, call
+python perceptron.py <your test data file>
+
+To run the svm algorithm, call
+python svm.py <your test data file>
+
+
+************ Results *******
+{Report the result on dev and test. You should make it clear what’s you parameter selection procedure on the dev set. Don’t report all the console output, do it neat and clean. If you are doing comparison with previous homework, report the previous result on dev and test}
+
+************ Your interpretation *******
+{Analyze the result you have, try to explain how your machine learning algorithm works and the comparison with previous algorithms if required}
+
+************ References ************
+{Any external materials you used for the homework. Anyone you discussed with}

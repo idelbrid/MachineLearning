@@ -1,0 +1,112 @@
+Name: Ian Delbridge
+Email: idelbrid@u.rochester.edu
+Course: CSC246
+Homework: Homework 5, due Wed 2/17 5pm by turn_in script
+    Implement perceptron and SVM for the adult income dataset. Report how performance on dev varies as a function of C, and how perceptron and SVM compare. 
+************ Files *********
+perceptron.py - Code for the perceptron algorithm classifier
+svm.py - Code for the SVM classifier
+README - This file
+svm_cap_tests - Record of the result of different combinations of parameters on the svm classifier. In particular shows the difference in accuracy for a given "capacity" C.
+
+
+************ Algorithm *****
+Perceptron:
+w := weights of the linear classifier
+X := training data
+N := number of observations/records
+y := class label (-1 or 1)
+L := learning rate (may change over the course of the evaluation)
+
+Basic
+REPEAT UNTIL maxiter
+	for n in 1 to N
+		if sign(w.T * X^(n)) != y_n
+			w = w + y_n * X^(n)
+
+Modified (slightly different gradient descent method)
+REPEAT UNTIL maxiter
+	for n in 1 to N
+		if sign(w.T * X^(n)) != y_n
+			w = w + L * y_n * X^(n)
+
+The the predictor is for a new observation x, 
+	yhat = w.T * x
+Note that you can just add a bias parameter by appending X with an attribute that is always 1.
+
+Support Vector Machine:
+w := weight of the linear classifier
+b := bias variable
+X := training data
+N := number of observations/records
+y := class label (-1 or 1)
+L := learning rate (may change over the course of the evaluation)
+
+REPEAT UNTIL maxiter
+	for n in 1 to N
+		if 1- y_n * (w.T * X^(n) + b) > 0
+			w = w - L * (1/N * w - C * y_n * X^(n) )
+			b = L * C * y_n
+		otherwise
+			w = w - L * (1/N * w)
+
+
+The the predictor is for a new observation x, 
+	yhat = w.T * x + b
+
+
+************ Instructions ***
+To run the perceptron algorithm, call
+python perceptron.py <your test data file>
+
+To run the svm algorithm, call
+python svm.py <your test data file>
+
+Example - 
+
+************ Results *******
+
+[idelbrid@cycle1 ~/MachineLearning]$ python perceptron.py a7a.dev
+6617 correct predictions for 8000 .
+The accuracy is 0.827125
+[idelbrid@cycle1 ~/MachineLearning]$ python perceptron.py a7a.test
+6975 correct predictions for 8461 .
+The accuracy is 0.824370641768
+
+[idelbrid@cycle1 ~/MachineLearning]$ python svm.py a7a.dev
+6693 correct predictions for 8000 .
+The accuracy is 0.836625
+[idelbrid@cycle1 ~/MachineLearning]$ python svm.py a7a.test
+7068 correct predictions for 8461 .
+The accuracy is 0.835362250325
+
+************ Your interpretation *******
+
+Perceptron got nearly an 83% accuracy on the dev set, and svm got slight above 83%. 
+Comparing this with linear regression which got an 85% accuracy, it's about what one might expect. 
+These all create linear classifiers and are simply attempting to find the best decision surface to 
+separate the classes. I expect the surfaces generated between all three are similar, but svm and 
+perceptron rely on stochastic gradient descent to optimize which may find not find the exact minimum. 
+Further, SVM is certainly capable of finding the same surface as perceptron, but because it takes 
+into consideration slack variables and attempts to maximize the margin, it ought to perform better 
+on withheld data by finding a slightly different surface. However, the number of parameters involved 
+in learning make it difficult to find precisely how to achieve that surface. Additionally, these 
+algorithms take longer to compute due to the in-line nature of stochastic gradient descent, and that 
+makes it hard to skim through many possibilities of the tuning parameters like the learning rate and 
+"C" value.
+
+The "C" value should act like the amount we penalize the SVM for making mistakes. Making very large
+C values means that we focus very much on decreasing the distance between the margin and missed points.
+I found that small C values around 0.03 yielded best results on the dev data. This may mean that it 
+was better to ignore the fact that we classified those points wrong and focus on maximizing the margin
+for points we know that we can correctly classify. Nonetheless, C didn't have a very predictable affect
+on the accuracy of the SVM. For very large C, there seemed to be a general downward trend in accuracy
+but with very high variance in the signal. This is shown in two pictures comparing different C values
+and their resulting accuracies on the dev data. Moreover, the effective C values depended on the 
+number of iteration and the learning rate. 
+
+
+************ References ************
+The textbook!
+Class notes
+NB notes
