@@ -6,3 +6,9 @@
 TURN_IN
 turn_in_exec
 *ian_delbridge_hw*
+*.dat
+*.png
+SVM/testing*
+SVM/param
+SVM/*test*
+
