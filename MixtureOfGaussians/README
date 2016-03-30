@@ -43,16 +43,29 @@ However, even if kmeans initialization isn't used, kmeans.py should still be in 
 
 ************ Results *******
 
-[idelbrid@cycle1 NaiveBayes]$ python bayes.py a7a.dev
-6666 correct predictions for 8000 .
-The accuracy is  0.83325
-[idelbrid@cycle1 NaiveBayes]$ python bayes.py a7a.test
-7037 correct predictions for 8461 .
-The accuracy is  0.831698380806
+[idelbrid@cycle1 MixtureOfGaussians]$ python gaussians.py
+-2731.09358816 log likelihood on first 90% of data
+-318.680738418 log likelihood on last 10% of data
+
 
 
 ************ Your interpretation *******
-This algorithm even when maximized using the best alpha doesn't quite meet the performance of the regularized linear regression classifier. I expect that the reason for this is the naive-bayes assumption - that the attribute values are independent given the label. Since this algorithm despite the probability behind it is still a linear algorithm, I wouldn't expect it to perform better than other linear classifiers dramatically, and indeed, it seems that the naive bayes assumption makes the linear classifier sub optimal.
+This application was easy to inspect visually to back up the math supporting the algorithm. So I made plots with the clustering output
+for some of the results. It is difficult to evaluate how useful the likelihood is as a metric for the goodness of the result, because 
+the relative likelihood never changed much from -320 to -330 on the test data, even when choosing ridiculously large numbers of gaussians.
+Nonetheless, with the plots of the log likelihood versus number of iterations, it was evident that with too few iterations the model 
+would not fit the data, but with too many iterations, it would over-fit; about 30 iterations seemed about right. When testing numbers of 
+gaussians to use, I was surprised to find that there wasn't as much of a difference in log-likelihod between using 3 or 4 gaussians and
+using way too many, like 20. Visually inspecting the data, it definitely looks like there ought to be 3 or 4 clusters though their
+distributions seem to uniform in an area to be gaussian. 
+
+Additionally, these clusters were very close together and overlapping, which
+made the problem much harder than completely disjoint clusters. 
+
+Finally, the initialization schemes didn't make that much of a difference.
+If enough iterations were made, they all converged to about the same thing (for a given number of gaussians). However, in fact, the 
+book suggested using k-means to initialize the means and covariances, but I found that in general this method of initialization caused 
+an increase in the log-likelihood. 
 
 ************ References ************
 Textbook, class notes, NB notes...
