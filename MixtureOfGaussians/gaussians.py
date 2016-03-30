@@ -124,21 +124,23 @@ def read_data(file_str, num_feats):
     return data
 
 
-def make_plot():  # subroutine for repeated tests with different number of gaussians
-    import matplotlib.pyplot as plt
+def batch_test():  # subroutine for repeated tests with different number of gaussians
     log_likelihoods = np.zeros(60)
-    for num_gauss in range(1, 30):
-        model = GaussianMixture(30, num_gaussians=num_gauss, init_method='kmeans', init_seed=456789)
+    log_likelihoods_train = np.zeros(60)
+    for iterations in range(1, 61):
+        model = GaussianMixture(iterations, num_gaussians=4, init_method='random', init_seed=456789)
         model.fit(train_data)  # fitting
-        # train_labels, train_likelihoods = model.pred(train_data)
+        train_labels, train_likelihoods = model.pred(train_data)
         test_labels, test_likelihoods = model.pred(test_data)
 
-        log_likelihoods[num_gauss-1] = np.log(test_likelihoods).sum()
-        print log_likelihoods[num_gauss-1], 'log likelihood ', num_gauss
-    with open('num_gaussians_likelihoods_many_kmeansiinit.csv', 'w+') as f:
-        f.write("number of gaussians,log likelihood\n")
-        for i, row in enumerate(log_likelihoods):
-            f.write("{},{}\n".format(i+1, row))
+        log_likelihoods_train[iterations-1] = np.log(train_likelihoods).sum()
+        log_likelihoods[iterations-1] = np.log(test_likelihoods).sum()
+
+        print log_likelihoods[iterations-1], 'log likelihood ', iterations
+    with open('num_iterations_likelihoods_many.csv', 'w+') as f:
+        f.write("number of iterations,log likelihood test,log likelihood train\n")
+        for i, row in enumerate(np.vstack((log_likelihoods, log_likelihoods_train)).T):
+            f.write("{},{},{}\n".format(i+1, row[0], row[1]))
 
 if __name__ == "__main__":
 
@@ -148,25 +150,26 @@ if __name__ == "__main__":
     train_data = data[:(len(data) * 9 / 10), :]  # first 90%
     test_data = data[(len(data)) * 9 / 10:, :]  # last 10%
 
-    # means = np.array([[1.3, 2],    # eye-balled means for manual initialization
-    #                   [2, -1.3],
-    #                   [-1.5, 1],
-    #                   [-1, -1.5]])
-    # cov = [np.array([[1, 0],
-    #                  [0, 1]])]*4
+    means = np.array([[1.3, 2],    # eye-balled means for manual initialization
+                      [2, -1.3],
+                      [-1.5, 1],
+                      [-1, -1.5]])
+    cov = [np.array([[1, 0],
+                     [0, 1]])]*4
 
-    model = GaussianMixture(10, num_gaussians=4, init_method='kmeans')
+    model = GaussianMixture(30, num_gaussians=4, init_method='random', init_seed=456789)
     model.fit(train_data)  # fitting
     train_labels, train_likelihoods = model.pred(train_data)
     test_labels, test_likelihoods = model.pred(test_data)
 
     log_likelihood = np.log(test_likelihoods).sum()  # likelihoods returned are for each point
 
+    print np.log(train_likelihoods).sum(), "log likelihood on first 10% of data"
     print log_likelihood, "log likelihood on last 10% of data"
 
-    # with open('label_logs_6rand.csv', 'w+') as f:
+    # with open('label_logs_rand.csv', 'w+') as f:
     #     f.write("dim1,dim2,label,likelihood\n")
     #     for row in np.vstack((test_data[:, 0], test_data[:, 1], test_labels, test_likelihoods)).T:
     #         f.write("{},{},{},{}\n".format(row[0], row[1], row[2], row[3]))
     #
-    make_plot()
+    batch_test()
