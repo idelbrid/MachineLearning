@@ -3,6 +3,7 @@
 *.train
 *.pyc
 *.py~
+*.csv
 TURN_IN
 turn_in_exec
 *ian_delbridge_hw*
