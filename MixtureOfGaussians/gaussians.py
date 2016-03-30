@@ -5,10 +5,9 @@ from kmeans import KMeans
 
 class GaussianMixture:
     def __init__(self, max_iter, num_gaussians, init_means=None, init_cov=None, init_weights=None, init_method='random',
-                 init_seed=123456):  # todo finish?
+                 init_seed=123456):
         if init_method not in ['random', 'kmeans']:
             sys.exit("undefined initialization method")
-
         self.init_means = init_means
         self.init_cov = init_cov
         self.init_weights = init_weights
@@ -25,31 +24,35 @@ class GaussianMixture:
         self.ndim = X.shape[1]
         np.random.seed(self.random_seed)
         matX = np.asmatrix(X)
+
+        # initialization schemes
         if self.init_method == 'random':
             if self.init_means is not None:
                 mu = self.init_means
             else:
-                mu = X[np.random.choice(range(0, len(X)), self.num_gaussians), :]
+                mu = X[np.random.choice(range(0, len(X)), self.num_gaussians), :]  # sample from the data
             if self.init_cov is not None:
                 sigma = self.init_cov
             else:
                 sigma = list()
                 for k in range(self.num_gaussians):
                     sigma.append(np.identity(self.ndim, dtype=np.float64))
-                    sigma[k] += np.random.rand(self.ndim, self.ndim)
-                    sigma[k] = np.dot(sigma[k], sigma[k].T)
+                    sigma[k] += np.random.rand(self.ndim, self.ndim)  # purely synthetic
+                    sigma[k] = np.dot(sigma[k], sigma[k].T)  # making it positive semi-definite and symmetric
                     sigma[k] /= sigma[k].sum()
 
-                    # lowerbound = k * self.N / self.num_gaussians
+                    # lowerbound = k * self.N / self.num_gaussians  # sample from data
                     # upperbound = lowerbound + 20
                     # sigma[k] = np.cov(X[lowerbound:upperbound, :].T)
+
             if self.init_weights is not None:
                 lmbda = self.init_weights
             else:
                 lmbda = np.random.rand(self.num_gaussians)
                 lmbda /= lmbda.sum()
-        elif self.init_method == 'kmeans':
-            model = KMeans(K=self.num_gaussians, max_iter=20)
+
+        elif self.init_method == 'kmeans':  # use means of kmeans as initial means, and calculate cov from the clusters
+            model = KMeans(K=self.num_gaussians, max_iter=5)
             model.fit(X)
             labels = model.pred(X)
             mu = np.zeros((self.num_gaussians, self.ndim))
@@ -64,6 +67,8 @@ class GaussianMixture:
                 lmbda = np.random.rand(self.num_gaussians)
                 lmbda /= lmbda.sum()
 
+
+        ######## BEGIN ACTUAL ALGORITHM ###################
         for iter in range(self.max_iter):
             phat = np.zeros((self.N, self.num_gaussians))
             N = np.zeros(self.num_gaussians)
@@ -73,8 +78,9 @@ class GaussianMixture:
                 normal_var = normal(mean=mu[k], cov=sigma[k])
                 phat[:, k] = lmbda[k] * normal_var.pdf(X)
             phat /= phat.sum(axis=1)[:, None]
+            # faster to do it all with numpy than use loops
 
-            # for n in range(0, self.N):  # for each training point...
+            # for n in range(0, self.N):  # loop over each data point
             #     for k in range(0, self.num_gaussians):
             #         normalx = normal(mean=mu[k], cov=sigma[k]).pdf(X[n, :])
             #         phat[n, k] = lmbda[k] * normalx
@@ -157,7 +163,7 @@ if __name__ == "__main__":
     cov = [np.array([[1, 0],
                      [0, 1]])]*4
 
-    model = GaussianMixture(30, num_gaussians=4, init_method='random', init_seed=456789)
+    model = GaussianMixture(30, num_gaussians=4, init_method='kmeans', init_seed=456789)
     model.fit(train_data)  # fitting
     train_labels, train_likelihoods = model.pred(train_data)
     test_labels, test_likelihoods = model.pred(test_data)
