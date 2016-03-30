@@ -164,7 +164,7 @@ if __name__ == "__main__":
 
     log_likelihood = np.log(test_likelihoods).sum()  # likelihoods returned are for each point
 
-    print np.log(train_likelihoods).sum(), "log likelihood on first 10% of data"
+    print np.log(train_likelihoods).sum(), "log likelihood on first 90% of data"
     print log_likelihood, "log likelihood on last 10% of data"
 
     # with open('label_logs_rand.csv', 'w+') as f:
