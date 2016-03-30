@@ -1,15 +1,13 @@
 import sys
 import numpy as np
 from scipy.stats import multivariate_normal as normal
+from kmeans import KMeans
 
-
-class gauss_mixture:
+class GaussianMixture:
     def __init__(self, max_iter, num_gaussians, init_means=None, init_cov=None, init_weights=None, init_method='random',
                  init_seed=123456):  # todo finish?
         if init_method not in ['random', 'kmeans']:
             sys.exit("undefined initialization method")
-        elif init_method == 'kmeans':
-            sys.exit("kmeans initialization not yet implemented")
 
         self.init_means = init_means
         self.init_cov = init_cov
@@ -21,7 +19,7 @@ class gauss_mixture:
         self.num_gaussians = num_gaussians
         self.random_seed = init_seed
 
-    def fit(self, X):  # todo: finish by rechecking correctness and saving probabilities
+    def fit(self, X):
         self.X = X
         self.N = X.shape[0]
         self.ndim = X.shape[1]
@@ -38,13 +36,28 @@ class gauss_mixture:
                 sigma = list()
                 for k in range(self.num_gaussians):
                     sigma.append(np.identity(self.ndim, dtype=np.float64))
-                    # sigma[k] += np.random.rand(self.ndim, self.ndim)
-                    # sigma[k] = np.dot(sigma[k], sigma[k].T)
-                    # sigma[k] /= sigma[k].sum()
+                    sigma[k] += np.random.rand(self.ndim, self.ndim)
+                    sigma[k] = np.dot(sigma[k], sigma[k].T)
+                    sigma[k] /= sigma[k].sum()
 
-                    lowerbound = k * self.N / self.num_gaussians
-                    upperbound = lowerbound + 20
-                    sigma[k] = np.cov(X[lowerbound:upperbound, :].T)
+                    # lowerbound = k * self.N / self.num_gaussians
+                    # upperbound = lowerbound + 20
+                    # sigma[k] = np.cov(X[lowerbound:upperbound, :].T)
+            if self.init_weights is not None:
+                lmbda = self.init_weights
+            else:
+                lmbda = np.random.rand(self.num_gaussians)
+                lmbda /= lmbda.sum()
+        elif self.init_method == 'kmeans':
+            model = KMeans(K=self.num_gaussians, max_iter=20)
+            model.fit(X)
+            labels = model.pred(X)
+            mu = np.zeros((self.num_gaussians, self.ndim))
+            sigma = [np.zeros((self.ndim, self.ndim))] * self.num_gaussians
+            for k in range(self.num_gaussians):
+                cluster = X[labels == k]
+                mu[k] = cluster.mean(axis=0)
+                sigma[k] = np.cov(cluster.T)
             if self.init_weights is not None:
                 lmbda = self.init_weights
             else:
@@ -56,11 +69,16 @@ class gauss_mixture:
             N = np.zeros(self.num_gaussians)
 
             # E step
-            for n in range(0, self.N):  # for each training point...
-                for k in range(0, self.num_gaussians):
-                    normalx = normal(mean=mu[k], cov=sigma[k]).pdf(X[n, :])
-                    phat[n, k] = lmbda[k] * normalx
-                phat[n, :] /= phat[n, :].sum()
+            for k in range(0, self.num_gaussians):
+                normal_var = normal(mean=mu[k], cov=sigma[k])
+                phat[:, k] = lmbda[k] * normal_var.pdf(X)
+            phat /= phat.sum(axis=1)[:, None]
+
+            # for n in range(0, self.N):  # for each training point...
+            #     for k in range(0, self.num_gaussians):
+            #         normalx = normal(mean=mu[k], cov=sigma[k]).pdf(X[n, :])
+            #         phat[n, k] = lmbda[k] * normalx
+            #     phat[n, :] /= phat[n, :].sum()
 
             # M step
             for k in range(self.num_gaussians):
@@ -75,17 +93,15 @@ class gauss_mixture:
         self.sigma = sigma
         self.lmbda = lmbda
 
-    def pred(self, test_data):
+    def pred(self, test_data):  # use learned gaussians to predict most likely distribution and total likelihood of the pt
         num_pts = len(test_data)
-        likelihood = np.zeros(num_pts)
         p = np.zeros((num_pts, self.num_gaussians), dtype=np.float64)
-        pred_labels = np.zeros(num_pts)
-        for n in range(num_pts):
-            for k in range(self.num_gaussians):
-                normal_var = normal(mean=self.mu[k], cov=self.sigma[k])
-                p[n, k] = self.lmbda[k] * normal_var.pdf(test_data[n])
-            pred_labels[n] = p[n, :].argmax()
-            likelihood[n] = p[n, :].sum()
+
+        for k in range(self.num_gaussians):
+            normal_var = normal(mean=self.mu[k], cov=self.sigma[k])
+            p[:, k] = self.lmbda[k] * normal_var.pdf(test_data)
+        pred_labels = p.argmax(axis=1)
+        likelihood = p.sum(axis=1)
         return pred_labels, likelihood
 
 
@@ -107,50 +123,50 @@ def read_data(file_str, num_feats):
                     data[i, j] = float(word)
     return data
 
-def make_plot():
-    log_likelihoods = np.zeros(30)
+
+def make_plot():  # subroutine for repeated tests with different number of gaussians
+    import matplotlib.pyplot as plt
+    log_likelihoods = np.zeros(60)
     for num_gauss in range(1, 30):
-        model = gauss_mixture(17, num_gaussians=num_gauss)
+        model = GaussianMixture(30, num_gaussians=num_gauss, init_method='kmeans', init_seed=456789)
         model.fit(train_data)  # fitting
         # train_labels, train_likelihoods = model.pred(train_data)
         test_labels, test_likelihoods = model.pred(test_data)
 
         log_likelihoods[num_gauss-1] = np.log(test_likelihoods).sum()
-        print log_likelihoods[num_gauss-1], 'log likelihood ', num_gauss - 1
-    with open('num_gaussians_likelihoods.csv', 'w+') as f:
+        print log_likelihoods[num_gauss-1], 'log likelihood ', num_gauss
+    with open('num_gaussians_likelihoods_many_kmeansiinit.csv', 'w+') as f:
         f.write("number of gaussians,log likelihood\n")
         for i, row in enumerate(log_likelihoods):
             f.write("{},{}\n".format(i+1, row))
 
 if __name__ == "__main__":
 
-    if len(sys.argv) < 1:
-        print 'No dataset. \nAdd data file with program argument.'
-        sys.exit()
-    else:
-        num_feats = 2  # known ahead of time
+    num_feats = 2  # known ahead of time
 
-        data = read_data('../points.dat', num_feats)
-        train_data = data[:(len(data) * 9 / 10), :]  # first 90%
-        test_data = data[(len(data)) * 9 / 10:, :]  # last 10%
-        # means = np.array([[1.3, 2],    # eye-balled means for initialization
-        #                   [2, -1.3],
-        #                   [-1.5, 1],
-        #                   [-1, -1.5]])
-        # cov = [np.array([[1, 0],
-        #                  [0, 1]])]*4
-        model = gauss_mixture(30, num_gaussians=3)
-        model.fit(train_data)  # fitting
-        train_labels, train_likelihoods = model.pred(train_data)
-        test_labels, test_likelihoods = model.pred(test_data)
+    data = read_data('../points.dat', num_feats)
+    train_data = data[:(len(data) * 9 / 10), :]  # first 90%
+    test_data = data[(len(data)) * 9 / 10:, :]  # last 10%
 
-        log_likelihood = np.log(test_likelihoods).sum()
+    # means = np.array([[1.3, 2],    # eye-balled means for manual initialization
+    #                   [2, -1.3],
+    #                   [-1.5, 1],
+    #                   [-1, -1.5]])
+    # cov = [np.array([[1, 0],
+    #                  [0, 1]])]*4
 
-        print log_likelihood, "log likelihood"
+    model = GaussianMixture(10, num_gaussians=4, init_method='kmeans')
+    model.fit(train_data)  # fitting
+    train_labels, train_likelihoods = model.pred(train_data)
+    test_labels, test_likelihoods = model.pred(test_data)
 
-        with open('label_logs_6rand.csv', 'w+') as f:
-            f.write("dim1,dim2,label,likelihood\n")
-            for row in np.vstack((test_data[:, 0], test_data[:, 1], test_labels, test_likelihoods)).T:
-                f.write("{},{},{},{}\n".format(row[0], row[1], row[2], row[3]))
+    log_likelihood = np.log(test_likelihoods).sum()  # likelihoods returned are for each point
 
-        make_plot()
+    print log_likelihood, "log likelihood on last 10% of data"
+
+    # with open('label_logs_6rand.csv', 'w+') as f:
+    #     f.write("dim1,dim2,label,likelihood\n")
+    #     for row in np.vstack((test_data[:, 0], test_data[:, 1], test_labels, test_likelihoods)).T:
+    #         f.write("{},{},{},{}\n".format(row[0], row[1], row[2], row[3]))
+    #
+    make_plot()
