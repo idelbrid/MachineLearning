@@ -128,7 +128,7 @@ def batch_test():  # subroutine for repeated tests with different number of gaus
     log_likelihoods = np.zeros(60)
     log_likelihoods_train = np.zeros(60)
     for iterations in range(1, 61):
-        model = GaussianMixture(iterations, num_gaussians=4, init_method='random', init_seed=456789)
+        model = GaussianMixture(iterations, num_gaussians=20, init_method='random', init_seed=456789)
         model.fit(train_data)  # fitting
         train_labels, train_likelihoods = model.pred(train_data)
         test_labels, test_likelihoods = model.pred(test_data)
@@ -137,7 +137,7 @@ def batch_test():  # subroutine for repeated tests with different number of gaus
         log_likelihoods[iterations-1] = np.log(test_likelihoods).sum()
 
         print log_likelihoods[iterations-1], 'log likelihood ', iterations
-    with open('num_iterations_likelihoods_many.csv', 'w+') as f:
+    with open('num_iterations_likelihoods_many_extra_gaussians.csv', 'w+') as f:
         f.write("number of iterations,log likelihood test,log likelihood train\n")
         for i, row in enumerate(np.vstack((log_likelihoods, log_likelihoods_train)).T):
             f.write("{},{},{}\n".format(i+1, row[0], row[1]))
@@ -172,4 +172,4 @@ if __name__ == "__main__":
     #     for row in np.vstack((test_data[:, 0], test_data[:, 1], test_labels, test_likelihoods)).T:
     #         f.write("{},{},{},{}\n".format(row[0], row[1], row[2], row[3]))
     #
-    batch_test()
+    # batch_test()

@@ -1,0 +1,59 @@
+Name: Ian Delbridge
+Email: idelbrid@u.rochester.edu
+Course: CSC246
+Homework: Homework 7, due Wed 3/30 5pm by turn_in script
+Implement EM fitting of a mixture of gaussians on the two-dimensional data set points.dat. 
+You should try different numbers of mixtures, as well as tied vs. separate covariance matrices for each gaussian. 
+OR Implement EM fitting of the aspect model on the discrete data set pairs.dat. You should try different numbers of mixtures.
+
+IN EITHER CASE Use the final 1/10 of the data for dev. Plot likelihood on train and dev vs iteration for different numbers of mixtures.
+
+************ Files *********
+clusters_4_random.png - plot of the clustering result on the training data with four gaussians and randomized initialization
+gaussians.py - code for the mixture of gaussians model. Includes wrapper class and a script for this application
+kmeans.py - wrapper class for kmeans clustering. Optionally used to initialize the gaussian mixture model
+log_likelihood_test_4_gaussians.png - plot of log likelihood vs iterations of test data with 4 gaussians
+log_likelihood_test_20gaussians.png - plot of log likelihood vs iterations of test data with 20 gaussians
+log_likelihood_train_4_gaussians.png - plot of log likelihood vs iterations of train data with 4 gaussians
+log_likelihood_train_20_gaussians.png - plot of log likelihood vs iterations of train data with 20 gaussians
+README - this file
+
+
+************ Algorithm *****
+My algorithm's implementation is split into two phases: fit and predict. 
+The fit function performs EM optimization to find the parameters of the gaussians. 
+The predict function calculates the most likely gaussian for each point and the total likelihood of each point.
+
+The fitting is performed by first initializing the parameters (mixing coefficients, means, and covariances) (in one of several ways to initialize). 
+Then an estimation of the probability over the data is calculated using these parameters (mixing * normal(x ; mu, sigma)) / total
+
+Then in the m-step, using the probabilty from the e-step, new parameters are set. They are determined by the maximum likelihood of the data. 
+Until convergence or max iterations, we repeat the e-step, then the m-step.
+
+The predict just calculates the likelihood of each point determined by the final parameters of the fitting algorithm, i.e. sum over gaussians ( mixing * normal(x ; mu, sigma) ).
+
+
+
+************ Instructions ***
+run the following command
+python gaussians.py
+
+Note that other configurations of the algorithm like alternate initialization schemes are hard-coded into the script that uses the mixture of gaussians class. 
+However, even if kmeans initialization isn't used, kmeans.py should still be in the same directory as gaussians.py for the import. 
+
+************ Results *******
+
+[idelbrid@cycle1 NaiveBayes]$ python bayes.py a7a.dev
+6666 correct predictions for 8000 .
+The accuracy is  0.83325
+[idelbrid@cycle1 NaiveBayes]$ python bayes.py a7a.test
+7037 correct predictions for 8461 .
+The accuracy is  0.831698380806
+
+
+************ Your interpretation *******
+This algorithm even when maximized using the best alpha doesn't quite meet the performance of the regularized linear regression classifier. I expect that the reason for this is the naive-bayes assumption - that the attribute values are independent given the label. Since this algorithm despite the probability behind it is still a linear algorithm, I wouldn't expect it to perform better than other linear classifiers dramatically, and indeed, it seems that the naive bayes assumption makes the linear classifier sub optimal.
+
+************ References ************
+Textbook, class notes, NB notes...
+
