@@ -15,30 +15,41 @@ class HMM:
         self.max_iter = max_iter
         self.random_seed = init_seed
         self.T = None
-        self.transition = None
-        self.emission = None
+        self.A = None
+        self.B = None
+        self.pi = None
         self.mu = None
         self.sigma = None
 
-    def forward_backward(self):  # todo: actually test, speed up
+    def forward_backward(self):  # todo: actually test, speed up, alter for initial states
         T = self.T
-        alpha = np.zeros(T, self.num_gaussians)
-        beta = np.zeros(T, self.num_gaussians)
-        A = self.transition
-        B = self.emission
+        alpha = np.zeros((T, self.num_gaussians))
+        beta = np.zeros((T, self.num_gaussians))
+        A = self.A
+        B = self.B
+        # alpha[-1, self.num_gaussians] = 1
+        # alpha[-1, :self.num_gaussians] = 0
         for t in range(0, T):  # Standard calculation
-            for j in range(self.num_gaussians):
-                for i in range(self.num_gaussians):
-                    alpha[t, j] += alpha[t-1, i] * A[j, i] * B[t+1, j]
-
-        for t in range(T-1, 0, -1):  # off by one?
-            for i in range(self.num_gaussians):
+            if t == 0:
                 for j in range(self.num_gaussians):
-                    beta[t, i] += beta[t+1, j] * A[j, i] * B[t+1, j]
+                    alpha[0, j] = self.pi[j] * self.B[0, j]
+            else:
+                for j in range(self.num_gaussians):
+                    for i in range(self.num_gaussians):
+                        alpha[t, j] += alpha[t-1, i] * A[j, i] * B[t+1, j]
+
+        for t in range(T-1, -1, -1):  # off by one?
+            if t == T-1:
+                for i in range(self.num_gaussians):
+                    beta[T-1, i] = 1
+            else:
+                for i in range(self.num_gaussians):
+                    for j in range(self.num_gaussians):
+                        beta[t, i] += beta[t+1, j] * A[j, i] * B[t+1, j]
 
         a = np.zeros(T, self.num_gaussians)
         b = np.zeros(T, self.num_gaussians)
-        for t in range(0, T):  # Faster?
+        for t in range(0, T):  # Faster? Works? Todo verify if this is an alternative
             a[t, :] = np.dot(A, a[t-1, :]) * B[t, :]
 
         for t in range(T-1, 0, -1):
@@ -46,22 +57,36 @@ class HMM:
 
         # a == alpha?
         # b == beta?
-        return alpha, beta
+        return alpha[:-1, :-1], beta[:-1, :-1]
 
     def fit(self, X):
         self.X = X
         matX = np.asmatrix(self.X)
-        self.N = X.shape[0]
+        self.T = X.shape[0]
         self.ndim = X.shape[1]
         np.random.seed(self.random_seed)
-        mu = self.mu
-        sigma = self.sigma
-        A = self.transition
-        B = self.emission
+
         # initialization schemes
         if self.init_method == 'random':
-            pass
+            self.A = np.zeros((self.num_gaussians, self.num_gaussians))
+            self.A += 1.0 / self.num_gaussians
+            self.A += np.random.rand(self.num_gaussians, self.num_gaussians) * 0.1
+            self.A /= self.A.sum(axis=0)
 
+            self.pi = np.zeros(self.num_gaussians)
+            self.pi += 1.0
+            self.pi += np.random.rand(self.num_gaussians) * 0.01
+            self.pi /= self.pi.sum()
+
+            self.mu = X[np.random.choice(range(0, len(X)), self.num_gaussians), :]  # sample from the data
+            self.sigma = list()
+            self.B = np.zeros((self.T, self.num_gaussians))
+            for k in range(self.num_gaussians):
+                    self.sigma.append(np.identity(self.ndim, dtype=np.float64))
+                    self.sigma[k] += np.random.rand(self.ndim, self.ndim)  # purely synthetic
+                    self.sigma[k] = np.dot(self.sigma[k], self.sigma[k].T)  # making it positive semi-definite
+                    self.sigma[k] /= self.sigma[k].sum()
+                    self.B[:, k] = normal(self.mu[k], self.sigma[k]).pdf(X)
 
         ######## BEGIN ACTUAL ALGORITHM ###################
         gamma = np.zeros((self.T, self.num_gaussians))
@@ -77,21 +102,17 @@ class HMM:
                 for i in range(self.num_gaussians):
                     gamma[t, i] = alpha[t, i] * beta[t, i] / NORMALIZATION  # TODO
                     for j in range(self.num_gaussians):
-                        ksi[i, j, t] = alpha[j, t-1] * beta[i, t] * A[i, j] * B[t, i] / NORMAL
+                        ksi[i, j, t] = alpha[j, t-1] * beta[i, t] * self.A[i, j] * self.B[t, i] / NORMAL
 
             # M step
-            A = ect / ect.sum(axis=1) # check this is the right axis
+            self.A = ect / ect.sum(axis=1)  # check this is the right axis
+            self.pi = gamma[1, :] / gamma[1, :].sum()
             for k in range(self.num_gaussians):
                 norm = phat[:, k].sum()
-                mu[k] = np.dot(phat[:, k], X) / norm
+                self.mu[k] = np.dot(phat[:, k], X) / norm
                 intermed = np.multiply(phat[:, k], (matX - mu[k]).T).T
-                sigma[k] = np.dot(intermed.T, (matX - mu[k])) / norm
-                B[:, k] = normal(mu[k], sigma[k]).pdf(X)
-
-        self.mu = mu
-        self.sigma = sigma
-        self.transition = A
-        self.emission = B
+                self.sigma[k] = np.dot(intermed.T, (matX - mu[k])) / norm
+                self.B[:, k] = normal(self.mu[k], self.sigma[k]).pdf(X)
 
 
 
