@@ -1,5 +1,7 @@
 import sys
 import numpy as np
+from scipy.stats import multivariate_normal as normal
+
 
 class HMM:
     def __init__(self, max_iter, init_method='random', num_gaussians=3,
@@ -15,31 +17,32 @@ class HMM:
         self.T = None
         self.transition = None
         self.emission = None
+        self.mu = None
+        self.sigma = None
 
     def forward_backward(self):  # todo: actually test, speed up
         T = self.T
-        alpha = np.zeros(T, len(self.zval_range))
-        beta = np.zeros(T, len(self.zval_range))
+        alpha = np.zeros(T, self.num_gaussians)
+        beta = np.zeros(T, self.num_gaussians)
         A = self.transition
         B = self.emission
-
         for t in range(0, T):  # Standard calculation
-            for j in self.zval_range:
-                for i in self.zval_range:
-                    alpha[t, j] += alpha[t-1, i] * A[j, i] * B[self.X[t], j]
+            for j in range(self.num_gaussians):
+                for i in range(self.num_gaussians):
+                    alpha[t, j] += alpha[t-1, i] * A[j, i] * B[t+1, j]
 
         for t in range(T-1, 0, -1):  # off by one?
-            for i in self.zval_range:
-                for j in self.zval_range:
-                    beta[t, i] += beta[t+1, j] * A[j,i] * B[self.X[t+1], j]
+            for i in range(self.num_gaussians):
+                for j in range(self.num_gaussians):
+                    beta[t, i] += beta[t+1, j] * A[j, i] * B[t+1, j]
 
-        a = np.zeros(T, self.zval_range)
-        b = np.zeros(T, self.zval_range)
+        a = np.zeros(T, self.num_gaussians)
+        b = np.zeros(T, self.num_gaussians)
         for t in range(0, T):  # Faster?
-            a[t, :] = np.dot(A, a[t-1, :]) * B[self.X[t], :]
+            a[t, :] = np.dot(A, a[t-1, :]) * B[t, :]
 
         for t in range(T-1, 0, -1):
-            b[t, :] = np.dot(A, b[t+1, :]) * B[self.X[t+1], :]
+            b[t, :] = np.dot(A, b[t+1, :]) * B[t+1, :]
 
         # a == alpha?
         # b == beta?
@@ -47,33 +50,48 @@ class HMM:
 
     def fit(self, X):
         self.X = X
+        matX = np.asmatrix(self.X)
         self.N = X.shape[0]
         self.ndim = X.shape[1]
         np.random.seed(self.random_seed)
-
+        mu = self.mu
+        sigma = self.sigma
+        A = self.transition
+        B = self.emission
         # initialization schemes
         if self.init_method == 'random':
             pass
 
+
         ######## BEGIN ACTUAL ALGORITHM ###################
-        gamma = np.zeros(self.T, len(self.zval_range))
+        gamma = np.zeros((self.T, self.num_gaussians))
+        ksi = np.zeros((self.num_gaussians, self.num_gaussians, self.T))
         for iter in range(self.max_iter):
-            alpha, beta = self.forward_backward()
-            for t in range(self.T):
-                for i in self.zval_range:
-                    gamma[t, i] = alpha[t, i] * beta[t, i] / NORMALIZATION  # TODO
-
-
 
             # E step
+            phat = np.zeros((self.T, self.num_gaussians))
+            alpha, beta = self.forward_backward()
+            ect = np.zeros((self.num_gaussians, self.num_gaussians))
 
+            for t in range(self.T):
+                for i in range(self.num_gaussians):
+                    gamma[t, i] = alpha[t, i] * beta[t, i] / NORMALIZATION  # TODO
+                    for j in range(self.num_gaussians):
+                        ksi[i, j, t] = alpha[j, t-1] * beta[i, t] * A[i, j] * B[t, i] / NORMAL
 
             # M step
+            A = ect / ect.sum(axis=1) # check this is the right axis
+            for k in range(self.num_gaussians):
+                norm = phat[:, k].sum()
+                mu[k] = np.dot(phat[:, k], X) / norm
+                intermed = np.multiply(phat[:, k], (matX - mu[k]).T).T
+                sigma[k] = np.dot(intermed.T, (matX - mu[k])) / norm
+                B[:, k] = normal(mu[k], sigma[k]).pdf(X)
 
         self.mu = mu
         self.sigma = sigma
-        self.lmbda = lmbda
-
+        self.transition = A
+        self.emission = B
 
 
 

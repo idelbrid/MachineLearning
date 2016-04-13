@@ -12,4 +12,9 @@ turn_in_exec
 SVM/testing*
 SVM/param
 SVM/*test*
-
+Perceptron/cython_perceptron.c
+Perceptron/cython_perceptron.pyx
+Perceptron/run_cperceptron.py
+Perceptron/setup.py
+*ipynb*
+*.idea*
