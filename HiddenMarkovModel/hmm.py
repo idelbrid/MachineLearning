@@ -224,13 +224,13 @@ if __name__ == "__main__":
     train_data = data[:(len(data) * 9 / 10), :]  # first 90%
     test_data = data[(len(data)) * 9 / 10:, :]  # last 10%
 
-    model = HMM(30, num_gaussians=13)
+    model = HMM(30, num_gaussians=16)
     model.fit(train_data)  # fitting
     train_labels, log_likelihood = model.pred(train_data)
 
     print log_likelihood, "log likelihood on first 90% of data"
 
-    bettermodel, newlabels, newloglikelihood = best_of_10(train_data, num_gaussians=13, max_iter=30)
+    bettermodel, newlabels, newloglikelihood = best_of_10(train_data, num_gaussians=16, max_iter=30)
     print newloglikelihood, " log likelihood on first 90% of data (best model of 10)"
 
     # for g in range(9, 14):
