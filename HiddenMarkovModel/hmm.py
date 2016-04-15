@@ -2,10 +2,10 @@ import sys
 import numpy as np
 from scipy.stats import multivariate_normal as normal
 
-
+np.random.seed(123456)
 class HMM:
     def __init__(self, max_iter, init_method='random', num_gaussians=3,
-                 init_seed=123456):
+                 init_seed=None):
         if init_method not in ['random']:
             sys.exit("undefined initialization method")
 
@@ -14,7 +14,8 @@ class HMM:
         self.X = None
         self.max_iter = max_iter
         self.random_seed = init_seed
-        np.random.seed(self.random_seed)
+        if init_seed is not None:
+            np.random.seed(self.random_seed)
         self.T = None
         self.A = None
         self.B = None
@@ -113,8 +114,8 @@ class HMM:
                     self.B[:, k] = normal(self.mu[k], self.sigma[k]).pdf(X)
 
         ######## BEGIN ACTUAL ALGORITHM ###################
-        gamma = np.zeros((self.T, self.num_gaussians))
-        ksi = np.zeros((self.num_gaussians, self.num_gaussians, self.T))
+        gamma = np.zeros((self.T, self.num_gaussians))  # gamma(n, i) = p(z_n=i | X, theta)
+        ksi = np.zeros((self.num_gaussians, self.num_gaussians, self.T))  # ksi[i, j, t] = p(z_n = i, z_n-1 = j | X, theta)
         for iter in range(self.max_iter):
 
             # E step
@@ -125,9 +126,9 @@ class HMM:
                 gamma[0, i] = alpha[0, i] * beta[0, i]
             for t in range(1, self.T):  # skip 0 - covered by pi
                 for i in range(self.num_gaussians):
-                    gamma[t, i] = alpha[t, i] * beta[t, i]  # normalize below
+                    gamma[t, i] = alpha[t, i] * beta[t, i]
                     for j in range(self.num_gaussians):
-                        ksi[j, i, t] = alpha[t-1, j] * beta[t, i] * self.A[j, i] * self.B[t, i] / c[t] # may still have i, j backwards
+                        ksi[j, i, t] = alpha[t-1, j] * beta[t, i] * self.A[j, i] * self.B[t, i] / c[t]
                         ect[j, i] += ksi[j, i, t]  # expected count of zn =j and zn-1 =i is sum over t of p(z_{n-1}=j, z_n=i)
 
             # M step
@@ -140,31 +141,25 @@ class HMM:
                 self.sigma[k] = np.dot(intermed.T, (matX - self.mu[k])) / norm  # since taken from GAUSS MIX, correct
                 self.B[:, k] = normal(self.mu[k], self.sigma[k]).pdf(X)  # recalculating the table of densities
 
-    def pred(self, test_data):  # todo
+    def pred(self, test_data):  # calculate best labels (settings for z) and the log likelihood P(X | A, mu, pi, sigma)
         if len(test_data) != self.T:
             raise ValueError("Testing data does not match the length of the training data.")
-        alpha, beta, c = self.forward_backward(test_data)
+        alpha, beta, c = self.forward_backward(test_data)  # c is scaling constants
 
-        gamma = alpha * beta
+        gamma = alpha * beta  # gamma(n, i) = p(z_n=i | X, theta)
         pred_labels = gamma.argmax(axis=1)  # predicted labels, i.e. choices of latent variable z
-        testB = np.zeros((self.T, self.num_gaussians))
+        testB = np.zeros((self.T, self.num_gaussians))  # B[t, i] = p(x_t | z_t, theta) (emission probability)
         for k in range(self.num_gaussians):
             testB[:, k] = normal(self.mu[k], self.sigma[k]).pdf(test_data)
 
-        ksi = np.zeros((self.num_gaussians, self.num_gaussians, self.T))
+        ksi = np.zeros((self.num_gaussians, self.num_gaussians, self.T))  # ksi[i, j, t] = p(z_n = i, z_n-1 = j | X, theta)
         for t in range(1, self.T):  # skip 0 - covered by pi
             for i in range(self.num_gaussians):
                 for j in range(self.num_gaussians):
-                    ksi[j, i, t] = alpha[t-1, j] * beta[t, i] * self.A[j, i] * testB[t, i] / c[t] # may still have i, j backwards
+                    ksi[j, i, t] = alpha[t-1, j] * beta[t, i] * self.A[j, i] * testB[t, i] / c[t]
 
-        log_likelihood = (gamma[0, :] * self.pi).sum() + (ksi.sum(axis=2) * np.log(self.A)).sum() + (gamma * testB).sum()
+        log_likelihood = np.log(c).sum()
         return pred_labels, log_likelihood
-
-
-def best_of_10(X, max_iter):
-    models = list()
-    for i in range(10):
-        m = HMM(max_iter=max_iter)
 
 def read_data(file_str, num_feats):
     """ INPUT: string denoting the file containing the dataset, number of features
@@ -185,23 +180,41 @@ def read_data(file_str, num_feats):
     return data
 
 
-# def batch_test():  # subroutine for repeated tests with different number of gaussians
-#     log_likelihoods = np.zeros(60)
-#     log_likelihoods_train = np.zeros(60)
-#     for iterations in range(1, 61):
-#         model = GaussianMixture(iterations, num_gaussians=20, init_method='random', init_seed=456789)
-#         model.fit(train_data)  # fitting
-#         train_labels, train_likelihoods = model.pred(train_data)
-#         test_labels, test_likelihoods = model.pred(test_data)
-#
-#         log_likelihoods_train[iterations-1] = np.log(train_likelihoods).sum()
-#         log_likelihoods[iterations-1] = np.log(test_likelihoods).sum()
-#
-#         print log_likelihoods[iterations-1], 'log likelihood ', iterations
-#     with open('num_iterations_likelihoods_many_extra_gaussians.csv', 'w+') as f:
-#         f.write("number of iterations,log likelihood test,log likelihood train\n")
-#         for i, row in enumerate(np.vstack((log_likelihoods, log_likelihoods_train)).T):
-#             f.write("{},{},{}\n".format(i+1, row[0], row[1]))
+def best_of_10(X, **kwargs):  # tries 10 times with different random initializations.
+    models = list()
+    best_pair = (None, -np.inf)
+    best_index = -1
+    for i in range(10):
+        models.append(HMM(init_seed=None, **kwargs))
+        try:
+            models[i].fit(X)  # different due to random number generator state advancing
+            prediction, log_likelihood = models[i].pred(X)
+        except Exception:  # bad, but it will work... if the random matrix gave bad result, move to new random matrix
+            models[i].fit(X)
+            prediction, log_likelihood = model.pred(X)
+        # with open('HMMTests/HMMiter-{}gauss-{}try-{}.csv'.format(kwargs['max_iter'],kwargs['num_gaussians'],i), 'w+') as f:
+        #     f.write("x,y,z,loglikelihood\n")
+        #     for j, row in enumerate(np.hstack((X, prediction[:,np.newaxis]))):
+        #         f.write("{},{},{},{}\n".format(row[0], row[1], row[2], log_likelihood))
+        if log_likelihood > best_pair[1]:
+            best_index = i
+            best_pair = (prediction, log_likelihood)
+
+    return models[best_index], best_pair[0], best_pair[1]
+
+
+def batch_test(data):  # scripting subroutine for repeated tests with different number of gaussians, etc.
+    log_likelihoods = np.zeros((51, 7))
+    with open('HMM-likelihood-vs-iterations-vs-gaussians.csv', 'w+') as f:
+        f.write("number of iterations,number of gaussians,log likelihood\n")
+
+    for iterations in range(10, 60):
+        with open('HMM-likelihood-vs-iterations-vs-gaussians.csv', 'a') as f:
+            for gaussians in range(2, 9):
+                model, labels, loglikelihood = best_of_10(data, num_gaussians=gaussians, max_iter=iterations)
+                log_likelihoods[iterations - 10][gaussians - 2] = loglikelihood
+                f.write("{},{},{}\n".format(iterations,gaussians, loglikelihood))
+                print loglikelihood, 'log likelihood', iterations, 'iterations,', gaussians, 'gaussians.'
 
 if __name__ == "__main__":
 
@@ -211,17 +224,16 @@ if __name__ == "__main__":
     train_data = data[:(len(data) * 9 / 10), :]  # first 90%
     test_data = data[(len(data)) * 9 / 10:, :]  # last 10%
 
-    model = HMM(30)
+    model = HMM(30, num_gaussians=13)
     model.fit(train_data)  # fitting
     train_labels, log_likelihood = model.pred(train_data)
-    # test_labels, test_likelihoods = model.pred(test_data)
-
 
     print log_likelihood, "log likelihood on first 90% of data"
 
-    # with open('label_logs_rand.csv', 'w+') as f:
-    #     f.write("dim1,dim2,label,likelihood\n")
-    #     for row in np.vstack((test_data[:, 0], test_data[:, 1], test_labels, test_likelihoods)).T:
-    #         f.write("{},{},{},{}\n".format(row[0], row[1], row[2], row[3]))
-    #
-    # batch_test()
+    bettermodel, newlabels, newloglikelihood = best_of_10(train_data, num_gaussians=13, max_iter=30)
+    print newloglikelihood, " log likelihood on first 90% of data (best model of 10)"
+
+    # for g in range(9, 14):
+    #     best_of_10(train_data, num_gaussians=g, max_iter=30)
+
+    # batch_test(train_data)
