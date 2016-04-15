@@ -1,0 +1,60 @@
+Name: Ian Delbridge
+Email: idelbrid@u.rochester.edu
+Course: CSC246
+Homework: Homework 8, due Fri 4/15 5pm by turn_in script
+Implement EM to train an HMM for whichever dataset you used for assignment 7. The observation probs should be as in assignment 7: 
+either gaussian, or two discrete distributions conditionally independent given the hidden state. Does the HMM model the data 
+better than the original non-sequence model? What is the best number of states?
+
+************ Files *********
+4gauss_plot.png - plot of the clusterings for the HMM model
+convergence_plotting.png - plot of log likelihood vs iterations for several choices of number of gaussians
+hmm.py - code for the hidden markov model EM model and scripting for tests on points.dat
+README - this file
+
+************ Algorithm *****
+My algorithm's implementation is split into two phases: fit and predict. 
+The fit function performs EM optimization to find the parameters: the matrix of transition probabilities A, the means mu, and 
+covariances sigma.
+The predict function calculates "gamma" or p(z_i | x_1, ... , x_T) for all latent variables z_i and assigns the maximum setting for 
+each of them. Additionally, predict calculates the log-likelihood P(X | theta) which is the product of the scaling constants found
+in the scaled forward-backward algorithm. 
+
+In the E step, alpha and beta (as well as the scaling constants c) are calculated using the forward-backward algorithm adjusted to 
+scale the alpha and beta to a normalized probability as to prevent underflow. Then, alpha, beta, and c are used to calculate the 
+probability p(z_n = k | X, theta) = gamma(n , k) and p(z_n = i, z_{n-1} = j | X, theta) = ksi(n, i, j) for all settings of i, j, k, n.
+
+
+Then in the m-step, using the probabilties from the e-step, new parameters are set. The paramter A = the transition matrix is set by 
+A_{i,j} = the expect count of transitions from gaussian i to gaussian j, using ksi. Then the means for the gaussians are set by 
+weighted means according to gamma. Sigma is set just as in gaussian mixture model. Additionally, since I opted to use pi to decide 
+p(z_1 | x_1) instead of rolling it into A, pi is updated similarly.
+
+************ Instructions ***
+run the following command
+python hmm.py
+
+************ Results *******
+
+[idelbrid@cycle1 HiddenMarkovModel]$ python hmm.py
+-2184.7353034 log likelihood on first 90% of data
+-2184.73533436  log likelihood on first 90% of data (best model of 10)
+
+
+************ Your interpretation *******
+I compared the HMM using different numbers of gaussians and different number of iterations, taking the best of 10 random initializations
+each time. I found that as I increased both, the log likelihood increased. In fact, I tried up to 16 gaussians, and got log likelihood
+as high as -2050 with this setting. However, this is expected, a n+1 gaussian model can encode any model that a n gaussian model can. 
+The largest difference when changing the number of gaussians is from 2 to 3 and then from 3 to 4 - after 4, the gains weren't as significant.
+Therefore, without testing on a testing set of data, I would say that 4 is the best number of gaussians. Around 30 iterations drove
+the algorithm near convergence, so 30 is a good setting for this parameter. 
+
+Comparing this model to the gaussian mixture model, the HMM performs strictly better than the gaussian mixture model, since the HMM 
+can encode a mixture model by assuming that each z is independent, i.e. the transion matrix only has 1 real row, which is the mixture
+parameter lambda from the gaussian mixture model. In fact, the gains were significant. One of the best log likelihoods of the GMM was
+-2731 while with the same number of gaussians (4), the HMM was able to achieve -2184 log likelihod. Further, qualitatively by inspection,
+the HMM's clusters appeared better than GMM. That is, the gaussians appeared to have a much more gaussian shape. 
+
+************ References ************
+Textbook, class notes, NB notes...
+
